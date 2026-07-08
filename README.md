@@ -264,15 +264,6 @@ MapTR bắt buộc cần **calibration** (intrinsic/extrinsic từng camera) đ�
 
 ---
 
-## 11. Roadmap tiếp theo
-
-Theo yêu cầu mentor: **tạm dừng nghiên cứu model mới, tập trung hoàn thiện demo hiện tại trước.**
-
-Sau khi demo ổn, khảo sát các model SOTA hơn MapTR (đề xuất theo thứ tự dễ → khó deploy, dựa trên độ tương đồng kiến trúc):
-
-1. **MapQR** (ECCV 2024) — https://github.com/HXMap/MapQR — cải tiến query design, gần giống kiến trúc MapTR nhất
-2. **StreamMapNet** (WACV 2024) — https://github.com/yuantianyuan01/StreamMapNet — temporal streaming
-3. **SQD-MapNet** (ECCV 2024) — https://github.com/shuowang666/SQD-MapNet — build trên StreamMapNet, 74-75 mAP
 4. **MapTracker** (ECCV 2024 Oral) — https://github.com/woodfrog/maptracker — memory-based tracking, kiến trúc khác biệt nhất
 
 **Việc cần làm trước khi merge nhiều local map thành 1 global map**: xác nhận với mentor có cần bộ 6 ảnh calibration thật (đồng bộ, cùng xe, cùng thời điểm) hay demo hiện tại đã đủ đáp ứng yêu cầu.
