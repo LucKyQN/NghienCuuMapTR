@@ -27,8 +27,8 @@ Setup gồm 2 server nội bộ, thông LAN, mount chéo qua `sshfs`:
 
 | | Server 1 (Compute) | Server 2 (Storage) |
 |---|---|---|
-| IP | `10.70.39.39` | `10.70.39.204` |
-| SSH user | `quangnam` | `vnpt` |
+| IP | `..........` | `..........` |
+| SSH user | `quangnam` | `......` |
 | GPU | A100 | Không |
 | Vai trò | Chạy training/inference | Lưu trữ dataset (không cài Docker/env) |
 | Data thật | Không (chỉ mount qua sshfs) | `/data/maptr/nuscenes/` (~402GB, full trainval) |
