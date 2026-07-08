@@ -250,14 +250,6 @@ if __name__ == '__main__':
                     'src/iou3d_kernel.cu',
                 ]),
             make_cuda_ext(
-                name="bev_pool_ext",
-                module="mmdet3d.ops.bev_pool",
-                sources=[
-                    "src/bev_pool.cpp",
-                    "src/bev_pool_cuda.cu",
-                ],
-            ),
-            make_cuda_ext(
                 name='voxel_layer',
                 module='mmdet3d.ops.voxel',
                 sources=[
@@ -314,23 +306,7 @@ if __name__ == '__main__':
                 name='gather_points_ext',
                 module='mmdet3d.ops.gather_points',
                 sources=['src/gather_points.cpp'],
-                sources_cuda=['src/gather_points_cuda.cu']),
-            make_cuda_ext(
-                name="bev_pool_ext",
-                module="mmdet3d.ops.bev_pool",
-                sources=[
-                    "src/bev_pool.cpp",
-                    "src/bev_pool_cuda.cu",
-                ],
-            ),
-            make_cuda_ext(
-                name='bev_pool_v2_ext',
-                module='mmdet3d.ops.bev_pool_v2',
-                sources=[
-                    'src/bev_pool.cpp',
-                    'src/bev_pool_cuda.cu',
-                ],
-            ),
+                sources_cuda=['src/gather_points_cuda.cu'])
         ],
         cmdclass={'build_ext': BuildExtension},
         zip_safe=False)

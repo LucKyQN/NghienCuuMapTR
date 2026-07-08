@@ -1,7 +1,6 @@
 .. toctree::
    :maxdepth: 2
 
-   kitti_det.md
    nuscenes_det.md
    lyft_det.md
    waymo_det.md

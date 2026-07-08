@@ -234,7 +234,7 @@ class NuScenesDataset(Custom3DDataset):
                 viewpad[:intrinsic.shape[0], :intrinsic.shape[1]] = intrinsic
                 lidar2img_rt = (viewpad @ lidar2cam_rt.T)
                 lidar2img_rts.append(lidar2img_rt)
-            
+
             input_dict.update(
                 dict(
                     img_filename=image_paths,
@@ -244,10 +244,6 @@ class NuScenesDataset(Custom3DDataset):
         if not self.test_mode:
             annos = self.get_ann_info(index)
             input_dict['ann_info'] = annos
-        else:
-            annos = self.get_ann_info(index)
-            input_dict['ann_info'] = annos
-
 
         return input_dict
 
@@ -298,7 +294,6 @@ class NuScenesDataset(Custom3DDataset):
             gt_bboxes_3d=gt_bboxes_3d,
             gt_labels_3d=gt_labels_3d,
             gt_names=gt_names_3d)
-
         return anns_results
 
     def _format_bbox(self, results, jsonfile_prefix=None):
@@ -405,7 +400,7 @@ class NuScenesDataset(Custom3DDataset):
             eval_set=eval_set_map[self.version],
             output_dir=output_dir,
             verbose=False)
-        nusc_eval.main(render_curves=False) # pdb
+        nusc_eval.main(render_curves=False)
 
         # record metrics
         metrics = mmcv.load(osp.join(output_dir, 'metrics_summary.json'))

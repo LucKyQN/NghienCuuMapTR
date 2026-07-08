@@ -557,7 +557,6 @@ class NuScenesMonoDataset(CocoDataset):
         img_info = self.data_infos[index]
         input_dict = dict(img_info=img_info)
 
-
         if load_annos:
             ann_info = self.get_ann_info(index)
             input_dict.update(dict(ann_info=ann_info))

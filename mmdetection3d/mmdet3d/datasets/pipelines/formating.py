@@ -138,8 +138,7 @@ class Collect3D(object):
                             'pcd_vertical_flip', 'box_mode_3d', 'box_type_3d',
                             'img_norm_cfg', 'pcd_trans', 'sample_idx',
                             'pcd_scale_factor', 'pcd_rotation', 'pts_filename',
-                            'transformation_3d_flow',
-                            'cam_intrinsic', 'lidar2cam','current2tx', 'cam_types', 'frame_ids', 'cam_timestamps')):
+                            'transformation_3d_flow')):
         self.keys = keys
         self.meta_keys = meta_keys
 

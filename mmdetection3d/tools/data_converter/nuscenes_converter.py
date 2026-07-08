@@ -164,9 +164,6 @@ def _fill_trainval_infos(nusc,
     val_nusc_infos = []
 
     for sample in mmcv.track_iter_progress(nusc.sample):
-        # import pdb;pdb.set_trace()
-        map_location = nusc.get('log', nusc.get('scene', sample['scene_token'])['log_token'])['location']
-
         lidar_token = sample['data']['LIDAR_TOP']
         sd_rec = nusc.get('sample_data', sample['data']['LIDAR_TOP'])
         cs_record = nusc.get('calibrated_sensor',
@@ -181,7 +178,6 @@ def _fill_trainval_infos(nusc,
             'token': sample['token'],
             'sweeps': [],
             'cams': dict(),
-            'map_location': map_location,
             'lidar2ego_translation': cs_record['translation'],
             'lidar2ego_rotation': cs_record['rotation'],
             'ego2global_translation': pose_record['translation'],

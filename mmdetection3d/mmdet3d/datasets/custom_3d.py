@@ -151,7 +151,6 @@ class Custom3DDataset(Dataset):
         if input_dict is None:
             return None
         self.pre_pipeline(input_dict)
-
         example = self.pipeline(input_dict)
         if self.filter_empty_gt and \
                 (example is None or

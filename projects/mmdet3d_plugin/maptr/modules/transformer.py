@@ -262,15 +262,15 @@ class MapTRPerceptionTransformer(BaseModule):
                 bev_pos=bev_pos,
                 prev_bev=prev_bev,
                 **kwargs)
-            bev_embed = ret_dict['bev']
-            depth = ret_dict['depth']
+            bev_embed = ret_dict if isinstance(ret_dict, torch.Tensor) else ret_dict['bev']
+            depth = None
         else:
             ret_dict = self.lss_bev_encode(
                 mlvl_feats,
                 prev_bev=prev_bev,
                 **kwargs)
-            bev_embed = ret_dict['bev']
-            depth = ret_dict['depth']
+            bev_embed = ret_dict if isinstance(ret_dict, torch.Tensor) else ret_dict['bev']
+            depth = None
         if lidar_feat is not None:
             bs = mlvl_feats[0].size(0)
             bev_embed = bev_embed.view(bs, bev_h, bev_w, -1).permute(0,3,1,2).contiguous()

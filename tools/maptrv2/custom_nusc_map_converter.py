@@ -740,7 +740,11 @@ class VectorizedLocalMap(object):
         leaves = [v for v, d in pts_G.out_degree() if d == 0]
         all_paths = []
         for root in roots:
-            paths = nx.all_simple_paths(pts_G, root, leaves)
+            try:
+                paths = nx.all_simple_paths(pts_G, root, leaves)
+            except nx.NodeNotFound:
+                continue
+            # paths = nx.all_simple_paths(pts_G, root, leaves)
             all_paths.extend(paths)
 
         final_centerline_paths = []
@@ -924,21 +928,12 @@ args = parser.parse_args()
 
 
 if __name__ == '__main__':
-    train_version = f'{args.version}-trainval'
+    train_version = args.version
     nuscenes_data_prep(
         root_path=args.root_path,
         can_bus_root_path=args.canbus,
         info_prefix=args.extra_tag,
         version=train_version,
-        dataset_name='NuScenesDataset',
-        out_dir=args.out_dir,
-        max_sweeps=args.max_sweeps)
-    test_version = f'{args.version}-test'
-    nuscenes_data_prep(
-        root_path=args.root_path,
-        can_bus_root_path=args.canbus,
-        info_prefix=args.extra_tag,
-        version=test_version,
         dataset_name='NuScenesDataset',
         out_dir=args.out_dir,
         max_sweeps=args.max_sweeps)

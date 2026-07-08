@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import cv2
 import mmcv
 import numpy as np
 
@@ -46,7 +45,6 @@ class LoadMultiViewImageFromFiles(object):
         # img is of shape (h, w, c, num_views)
         img = np.stack(
             [mmcv.imread(name, self.color_type) for name in filename], axis=-1)
-
         if self.to_float32:
             img = img.astype(np.float32)
         results['filename'] = filename
@@ -650,6 +648,7 @@ class LoadAnnotations3D(LoadAnnotations):
             results = self._load_masks_3d(results)
         if self.with_seg_3d:
             results = self._load_semantic_seg_3d(results)
+
         return results
 
     def __repr__(self):
