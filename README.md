@@ -1,160 +1,279 @@
-<div align="center">
-<h1>MapTR <img src="assets/map.png" width="30"></h1>
-<h3>An End-to-End Framework for Online Vectorized HD Map Construction</h3>
+# MapTR Deployment — HD Map Construction
 
-[Bencheng Liao](https://github.com/LegendBC)<sup>1,2,3</sup> \*, [Shaoyu Chen](https://scholar.google.com/citations?user=PIeNN2gAAAAJ&hl=en&oi=sra)<sup>1,3</sup> \*, Yunchi Zhang<sup>1,3</sup> \*, [Bo Jiang](https://github.com/rb93dett)<sup>1,3</sup> \*,[Tianheng Cheng](https://scholar.google.com/citations?user=PH8rJHYAAAAJ&hl=zh-CN)<sup>1,3</sup>, [Qian Zhang](https://scholar.google.com/citations?user=pCY-bikAAAAJ&hl=zh-CN)<sup>3</sup>, [Wenyu Liu](http://eic.hust.edu.cn/professor/liuwenyu/)<sup>1</sup>, [Chang Huang](https://scholar.google.com/citations?user=IyyEKyIAAAAJ&hl=zh-CN)<sup>3</sup>, [Xinggang Wang](https://xinggangw.info/)<sup>1 :email:</sup>
- 
-<sup>1</sup> School of EIC, HUST, <sup>2</sup> Institute of Artificial Intelligence, HUST, <sup>3</sup> Horizon Robotics
+Repo triển khai MapTR (baseline) cho bài toán HD Map Estimation, train/test trên full nuScenes trainval dataset. Đạt **mAP = 0.4998**, khớp với số liệu chính thức trong paper/repo gốc (mAP 50.0).
 
-(\*) equal contribution, (<sup>:email:</sup>) corresponding author.
+> README này viết theo dạng "cầm tay chỉ việc" — người mới join chỉ cần đọc từ trên xuống là chạy được, không cần hỏi lại người cũ.
 
-ArXiv Preprint ([arXiv 2208.14437](https://arxiv.org/abs/2208.14437))
+---
 
-[openreview ICLR'23](https://openreview.net/forum?id=k7p_YAO7yE), accepted as **ICLR Spotlight**
+## Mục lục
 
-extended ArXiv Preprint MapTRv2 ([arXiv 2308.05736](https://arxiv.org/abs/2308.05736))
+1. [Tổng quan hạ tầng](#1-tổng-quan-hạ-tầng)
+2. [Kết quả đạt được](#2-kết-quả-đạt-được)
+3. [Cài đặt môi trường](#3-cài-đặt-môi-trường)
+4. [Chuẩn bị dataset](#4-chuẩn-bị-dataset)
+5. [Các bug đã fix trong code gốc](#5-các-bug-đã-fix-trong-code-gốc-quan-trọng---không-được-revert)
+6. [Chạy training / test](#6-chạy-training--test)
+7. [Demo web app (Flask 6-camera inference)](#7-demo-web-app-flask-6-camera-inference)
+8. [Giới hạn kỹ thuật cần biết](#8-giới-hạn-kỹ-thuật-cần-biết)
+9. [File quan trọng — không được xóa](#9-file-quan-trọng--không-được-xóa)
+10. [Troubleshooting thường gặp](#10-troubleshooting-thường-gặp)
+11. [Roadmap tiếp theo](#11-roadmap-tiếp-theo)
 
-</div>
+---
 
-#
-### News
-* **`Aug. 31th, 2023`:** initial MapTRv2 is released at ***maptrv2*** branch. Please run `git checkout maptrv2` to use it.
-* **`Aug. 14th, 2023`:** As required by many researchers, the code of MapTR-based map annotation framework (VMA) will be released at https://github.com/hustvl/VMA recently.
-* **`Aug. 10th, 2023`:** We release [MapTRv2](https://arxiv.org/abs/2308.05736) on Arxiv. MapTRv2 demonstrates much stronger performance and much faster convergence. To better meet the requirement of the downstream planner (like [PDM](https://github.com/autonomousvision/nuplan_garage)), we introduce an extra semantic——centerline (using path-wise modeling proposed by [LaneGAP](https://github.com/hustvl/LaneGAP)). Code & model will be released in late August. Please stay tuned!
-* **`May. 12th, 2023`:** MapTR now support various bevencoder, such as [BEVFormer encoder](projects/configs/maptr/maptr_tiny_r50_24e_bevformer.py) and [BEVFusion bevpool](projects\configs\maptr\maptr_tiny_r50_24e_bevpool.py). Check it out!
-* **`Apr. 20th, 2023`:** Extending MapTR to a general map annotation framework ([paper](https://arxiv.org/pdf/2304.09807.pdf), [code](https://github.com/hustvl/VMA)), with high flexibility in terms of spatial scale and element type.
-* **`Mar. 22nd, 2023`:** By leveraging MapTR, VAD ([paper](https://arxiv.org/abs/2303.12077), [code](https://github.com/hustvl/VAD))  models the driving scene as fully vectorized representation, achieving SoTA end-to-end planning performance!
-* **`Jan. 21st, 2023`:** MapTR is accepted to ICLR 2023 as **Spotlight Presentation**!
-* **`Nov. 11st, 2022`:** We release an initial version of MapTR.
-* **`Aug. 31st, 2022`:** We released our paper on Arxiv. Code/Models are coming soon. Please stay tuned! ☕️
+## 1. Tổng quan hạ tầng
 
+Setup gồm 2 server nội bộ, thông LAN, mount chéo qua `sshfs`:
 
-## Introduction
-<div align="center"><h4>MapTR/MapTRv2 is a simple, fast and strong online vectorized HD map construction framework.</h4></div>
+| | Server 1 (Compute) | Server 2 (Storage) |
+|---|---|---|
+| IP | `10.70.39.39` | `10.70.39.204` |
+| SSH user | `quangnam` | `vnpt` |
+| GPU | A100 | Không |
+| Vai trò | Chạy training/inference | Lưu trữ dataset (không cài Docker/env) |
+| Data thật | Không (chỉ mount qua sshfs) | `/data/maptr/nuscenes/` (~402GB, full trainval) |
 
-![framework](assets/teaser.png "framework")
-
-High-definition (HD) map provides abundant and precise static environmental information of the driving scene, serving as a fundamental and indispensable component for planning in autonomous driving system. In this paper, we present **Map** **TR**ansformer, an end-to-end framework for online vectorized HD map construction. We propose a unified permutation-equivalent modeling approach, i.e., modeling map element as a point set with a group of equivalent permutations, which accurately describes the shape of map element and stabilizes the learning process. We design a hierarchical query embedding scheme to flexibly encode structured map information and perform hierarchical bipartite matching for map element learning. To speed up convergence, we further introduce auxiliary one-to-many matching and dense supervision. The proposed method well copes with various map elements with arbitrary shapes. It runs at real-time inference speed and achieves state-of-the-art performance on both nuScenes and Argoverse2 datasets. Abundant qualitative results show stable and robust map construction quality in complex and various driving scenes.
-
-## Models
-> Results from the [MapTRv2 paper](https://arxiv.org/abs/2308.05736)
-
-
-![comparison]()
-
-| Method | Backbone | Lr Schd | mAP| FPS|
-| :---: | :---: | :---: | :---: | :---: 
-| MapTR | R18 | 110ep | 45.9 | 35.0| 
-| MapTR | R50 | 24ep | 50.3 | 15.1| 
-| MapTR | R50 | 110ep | 58.7|15.1|
-| MapTRv2 | R18 | 110ep | 52.3 | 33.7|
-| MapTRv2 | R50 | 24ep | 61.5 | 14.1|
-| MapTRv2 | R50 | 110ep | 68.7 | 14.1|
-| MapTRv2 | V2-99 | 110ep | 73.4 | 9.9|
-
-**Notes**: 
-
-- FPS is measured on NVIDIA RTX3090 GPU with batch size of 1 (containing 6 view images).
-- All the experiments are performed on 8 NVIDIA GeForce RTX 3090 GPUs. 
-
-> Results from this repo. 
-
-### MapTR
-
-<div align="center"><h4> nuScenes dataset</h4></div>
-
-| Method | Backbone | BEVEncoder |Lr Schd | mAP| FPS|memory | Config | Download |
-| :---: | :---: | :---: | :---: |  :---: | :---:|:---:| :---: | :---: |
-| MapTR-nano | R18 |GKT | 110ep |46.3  |35.0| 11907M (bs 24) |[config](projects/configs/maptr/maptr_nano_r18_110e.py) |[model](https://drive.google.com/file/d/1-wVO1pZhFif2igJoz-s451swQvPSto2m/view?usp=sharing) / [log](https://drive.google.com/file/d/1Hd25seDQKn8Vv6AQxPfSoiu-tY2i4Haa/view?usp=sharing) |
-| MapTR-tiny | R50 | GKT |24ep | 50.0 |15.1| 10287M (bs 4) | [config](projects/configs/maptr/maptr_tiny_r50_24e.py)|[model](https://drive.google.com/file/d/1n1FUFnRqdskvmpLdnsuX_VK6pET19h95/view?usp=share_link) / [log](https://drive.google.com/file/d/1nvPkk0EMHV8Q82E9usEKKYx7P38bCx1U/view?usp=share_link) |
-| MapTR-tiny | R50 |GKT | 110ep | 59.3 |15.1| 10287M (bs 4)|[config](projects/configs/maptr/maptr_tiny_r50_110e.py) |[model](https://drive.google.com/file/d/1SCF93LEEmXU0hMwPiUz9p2CWbL1FpB1h/view?usp=share_link) / [log](https://drive.google.com/file/d/1TQ4j_0Sf2ipzeYsEZZAHYzX4dCUaBqyp/view?usp=share_link) |
-| MapTR-tiny | Camera & LiDAR | GKT |24ep | 62.7 | 6.0 | 11858M (bs 4)|[config](projects/configs/maptr/maptr_tiny_fusion_24e.py) |[model](https://drive.google.com/file/d/1CFlJrl3ZDj3gIOysf5Cli9bX5LEYSYO4/view?usp=share_link) / [log](https://drive.google.com/file/d/1rb3S4oluxdZjNm2aJ5lBH23jrkYIaJbC/view?usp=share_link) |
-| MapTR-tiny | R50 | bevpool |24ep | 50.1 | 14.7 | 9817M (bs 4)|[config](projects/configs/maptr/maptr_tiny_r50_24e_bevpool.py) |[model](https://drive.google.com/file/d/16PK9XohV55_3qPVDtpXIl4_Iumw9EnfA/view?usp=sharing) / [log](https://drive.google.com/file/d/14nioV3_VV9KehmxK7XcAHxM8X6JH5WIr/view?usp=sharing) |
-| MapTR-tiny | R50 | bevformer |24ep | 48.7 | 15.0 | 10219M (bs 4)|[config](projects/configs/maptr/maptr_tiny_r50_24e_bevformer.py) |[model](https://drive.google.com/file/d/1y-UBwGBSb2xiV40AuQEBhB-xJyV7VusX/view?usp=sharing) / [log](https://drive.google.com/file/d/1r35bRhTGVtyZTP8drXBTOIhLYGCzjEaF/view?usp=sharing) |
-
-### MapTRv2
-Please `git checkout maptrv2` and follow the install instruction to use following checkpoint
-
-<div align="center"><h4> nuScenes dataset</h4></div>
-
-| Method | Backbone | BEVEncoder |Lr Schd | mAP| FPS|memory | Config | Download |
-| :---: | :---: | :---: | :---: |  :---: | :---:|:---:| :---: | :---: |
-| MapTRv2| R50 |bevpool | 24ep | WIP |14.1| WIP (bs 24) |[config](https://github.com/hustvl/MapTR/blob/maptrv2/projects/configs/maptrv2/maptrv2_nusc_r50_24ep.py) |model / log |
-| MapTRv2*| R50 |bevpool | 24ep | WIP |WIP| WIP (bs 24) |[config](https://github.com/hustvl/MapTR/blob/maptrv2/projects/configs/maptrv2/maptrv2_nusc_r50_24ep_w_centerline.py) |model / log |
-
-
-<div align="center"><h4> Argoverse2 dataset</h4></div>
-
-**Notes**: 
-
-- \* means that we introduce an extra semantic——centerline (using path-wise modeling proposed by [LaneGAP](https://github.com/hustvl/LaneGAP)).
-
-## Qualitative results on nuScenes val split and Argoverse2 val split
-
-<div align="center"><h4> MapTR/MapTRv2 maintains stable and robust map construction quality in various driving scenes.</h4></div>
-
-![visualization](assets/MapTRv2_av2_visualizations.png "visualization")
-
-
-
-### *MapTRv2 on whole nuScenes val split*
-[**Youtube**](https://www.youtube.com/watch?v=s7McToPNlJ4)
-
-### *MapTRv2 on whole Argoverse2 val split*
-[**Youtube**](https://www.youtube.com/watch?v=nC8W_2BZuys)
-
-<!-- ### *Sunny&Cloudy*
-https://user-images.githubusercontent.com/31960625/187059686-11e4dd4b-46db-4411-b680-17ed6deebda2.mp4
-
-### *Rainy*
-https://user-images.githubusercontent.com/31960625/187059697-94622ddb-e76a-4fa7-9c44-a688d2e439c0.mp4
-
-### *Night*
-https://user-images.githubusercontent.com/31960625/187059706-f7f5a7d8-1d1d-46e0-8be3-c770cf96d694.mp4 -->
-
-### *End-to-end Planning based on MapTR*
-https://user-images.githubusercontent.com/26790424/229679664-0e9ba5e8-bf2c-45e0-abbc-36d840ee5cc9.mp4
-
-
-
-## Getting Started
-- [Installation](docs/install.md)
-- [Prepare Dataset](docs/prepare_dataset.md) (Notes: annotation generation of MapTRv2 is different from MapTR )
-- [Train and Eval](docs/train_eval.md)
-- [Visualization](docs/visualization.md)
-
-
-## Catalog
-
-- [ ] centerline detection & topology support
-- [x] multi-modal checkpoints
-- [x] multi-modal code
-- [ ] lidar modality code
-- [x] argoverse2 dataset 
-- [x] Nuscenes dataset 
-- [x] MapTR checkpoints
-- [x] MapTR code
-- [x] Initialization
-
-## Acknowledgements
-
-MapTR is based on [mmdetection3d](https://github.com/open-mmlab/mmdetection3d). It is also greatly inspired by the following outstanding contributions to the open-source community: [BEVFusion](https://github.com/mit-han-lab/bevfusion), [BEVFormer](https://github.com/fundamentalvision/BEVFormer), [HDMapNet](https://github.com/Tsinghua-MARS-Lab/HDMapNet), [GKT](https://github.com/hustvl/GKT), [VectorMapNet](https://github.com/Mrmoore98/VectorMapNet_code).
-
-## Citation
-If you find MapTR is useful in your research or applications, please consider giving us a star 🌟 and citing it by the following BibTeX entry.
-```bibtex
-@inproceedings{MapTR,
-  title={MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction},
-  author={Liao, Bencheng and Chen, Shaoyu and Wang, Xinggang and Cheng, Tianheng, and Zhang, Qian and Liu, Wenyu and Huang, Chang},
-  booktitle={International Conference on Learning Representations},
-  year={2023}
-}
+**Sơ đồ mount:**
 ```
-```bibtex
-@inproceedings{MapTRv2,
-  title={MapTRv2: An End-to-End Framework for Online Vectorized HD Map Construction},
-  author={Liao, Bencheng and Chen, Shaoyu and Zhang, Yunchi and Jiang, Bo and Zhang, Qian and Liu, Wenyu and Huang, Chang and Wang, Xinggang},
-  booktitle={arXiv preprint arXiv: 2308.05736},
-  year={2023}
-}
+Server 1: ~/maptr/data/nuscenes
+              └─ symlink →
+Server 1: ~/data_server2/nuscenes   (sshfs mount)
+              └─ thật sự nằm ở →
+Server 2: /data/maptr/nuscenes/
 ```
+
+**Docker:**
+- Base image: `nvcr.io/nvidia/pytorch:22.12-py3`
+- Container đang chạy: `maptr_container`
+- Image đã commit (backup state): `maptr_server:v3`, `maptr_server:v4` ← **dùng v4**, đã có sẵn `app.py` + notebook
+- Bind mount: `~/maptr` (host, server 1) → `/workspace/MapTR` (trong container)
+
+> ⚠️ **Lưu ý dung lượng đĩa dễ gây hoảng:** `du -sh` trên thư mục `data` sẽ hiện ảo ~412G vì lệnh `du` đi xuyên qua sshfs mount point và cộng luôn dung lượng thật bên server 204. Dùng `du -x` để xem dung lượng thật local (chỉ ~10GB — data mini cũ). Disk local server 1 hiện dùng ~521G/878G (63%).
+
+---
+
+## 2. Kết quả đạt được
+
+Train/test trên **full nuScenes trainval** (850 scenes, 6019 val samples):
+
+| Metric | Giá trị |
+|---|---|
+| mAP | **0.4998** |
+| divider | 0.5208 |
+| ped_crossing | 0.4537 |
+| boundary | 0.5248 |
+
+So sánh: test trên nuScenes-mini (81 samples) trước đó chỉ ra 0.188 — **thấp do thiếu data, không phải lỗi code**.
+
+---
+
+## 3. Cài đặt môi trường
+
+### 3.1. Yêu cầu
+- Docker + NVIDIA Container Toolkit (để container thấy GPU)
+- Truy cập SSH vào cả 2 server
+- Image gốc: `nvcr.io/nvidia/pytorch:22.12-py3`
+
+### 3.2. Pull / build container
+
+```bash
+# Nếu dùng lại image đã build sẵn (khuyến nghị — đỡ mất công build lại mmcv-full/CUDA ops):
+docker load -i maptr_server_v4.tar   # nếu image được export dạng tar
+# hoặc pull từ registry nội bộ nếu có
+
+docker run --gpus all -it --name maptr_container \
+  -v ~/maptr:/workspace/MapTR \
+  maptr_server:v4 bash
+```
+
+### 3.3. Nếu phải build từ đầu (không khuyến khích, tốn nhiều công)
+
+Môi trường này khó dựng vì:
+- Base image dùng custom PyTorch build của NGC → `mmcv-full` **phải compile from source**, không dùng bản pip prebuilt được
+- Custom CUDA ops `bev_pool`, `bev_pool_v2` phải build tay
+- Một loạt lỗi tương thích: đường dẫn module `numba` đổi, `EfficientNet` bị đăng ký trùng, hàm transformer trả về sai số lượng giá trị
+
+→ **Khuyến nghị**: dùng lại `maptr_server:v4` đã build sẵn thay vì build lại từ đầu.
+
+---
+
+## 4. Chuẩn bị dataset
+
+Dataset: **full nuScenes trainval** (~402GB), lưu ở server 2 (`10.70.39.204:/data/maptr/nuscenes/`).
+
+### 4.1. Tải dataset (đã làm, chỉ cần biết vị trí)
+Data được tải bằng `aria2c` về server 2, **không cần tải lại**.
+
+### 4.2. Mount dataset vào server 1
+
+```bash
+# Trên server 1 (10.70.39.39):
+sshfs vnpt@10.70.39.204:/data/maptr/nuscenes ~/data_server2/nuscenes
+
+# Symlink để container thấy đúng path mong đợi:
+ln -s ~/data_server2/nuscenes ~/maptr/data/nuscenes
+```
+
+Kiểm tra mount thành công:
+```bash
+ls ~/maptr/data/nuscenes
+# Phải thấy: samples/ sweeps/ maps/ v1.0-trainval/ ...
+```
+
+---
+
+## 5. Các bug đã fix trong code gốc (QUAN TRỌNG — KHÔNG ĐƯỢC REVERT)
+
+Repo MapTR gốc có nhiều lỗi khi chạy trên full trainval + môi trường NGC container. Các file sau **đã được sửa thủ công**, không được ghi đè lại bản gốc từ upstream:
+
+| # | File | Fix |
+|---|---|---|
+| 1 | `tools/maptrv2/custom_nusc_map_converter.py` | Bỏ ghép cứng chuỗi `-trainval` |
+| 2 | `projects/mmdet3d_plugin/maptr/modules/transformer.py` | Fix `ret_dict['bev']` |
+| 3 | `projects/mmdet3d_plugin/maptr/dense_heads/maptr_head.py` | Fix unpack 5 giá trị trả về |
+| 4 | `tools/test.py` | Uncomment `MMDataParallel` cho single GPU |
+| 5 | `mmdetection3d/mmdet3d/datasets/pipelines/data_augment_utils.py` | Fix đường dẫn `numba.core.errors` |
+| 6 | `projects/mmdet3d_plugin/bevformer/modules/encoder.py` | Fix `points_in_boxes_batch` |
+| 7 | `mmdetection3d/mmdet3d/ops/__init__.py` | Thêm import `bev_pool`, `bev_pool_v2` |
+| 8 | `tools/maptrv2/custom_nusc_map_converter.py` (hàm `union_centerline`, dòng ~743) | Bọc try/except quanh `nx.all_simple_paths` |
+
+Fix #8 chi tiết (bug đã biết của MapTR repo trên full trainval, tác giả gốc chưa fix chính thức):
+
+```python
+try:
+    paths = nx.all_simple_paths(pts_G, root, leaves)
+except nx.NodeNotFound:
+    continue
+```
+
+> Nếu pull code mới từ upstream MapTR, **phải áp lại 8 fix này** trước khi chạy trên full trainval.
+
+---
+
+## 6. Chạy training / test
+
+```bash
+cd /workspace/MapTR
+
+# Test/inference với checkpoint đã train:
+python tools/test.py \
+  projects/configs/maptr/maptr_tiny_r50_24e.py \
+  ckpts/maptr_tiny_r50_24e.pth \
+  --eval chamfer
+```
+
+Kết quả mong đợi: mAP ~0.4998 (xem mục 2).
+
+---
+
+## 7. Demo web app (Flask 6-camera inference)
+
+**File**: `app.py` (Flask) và `maptr_6cam_inference.ipynb` — cả 2 nằm trong `/workspace/MapTR/`.
+
+**Chức năng**: Upload 6 ảnh camera (bố trí đúng vị trí thật quanh xe: front-left/front/front-right phía trên, back-left/back/back-right phía dưới) → chạy MapTR inference → hiển thị vectorized map song song với ảnh gốc.
+
+### 7.1. Bật demo — làm đúng thứ tự
+
+```bash
+# Bước 1: SSH/VS Code vào server 1 (10.70.39.39)
+
+# Bước 2: Check GPU trong container TRƯỚC KHI chạy app (hay lỗi sau khi restart máy)
+sudo docker exec -it maptr_container bash
+nvidia-smi
+```
+
+Nếu gặp lỗi `Failed to initialize NVML`:
+```bash
+exit
+sudo docker restart maptr_container
+sudo docker exec -it maptr_container bash
+```
+
+```bash
+# Bước 3: Chạy Flask app
+cd /workspace/MapTR
+python app.py
+# Đợi đến khi thấy dòng: "Model đã sẵn sàng..."
+```
+
+```bash
+# Bước 4: Mở tab terminal MỚI (không đụng tab đang chạy app.py), lấy IP container
+sudo docker inspect maptr_container | grep IPAddress
+# IP hiện tại: 172.17.0.13 (thường không đổi giữa các lần restart)
+```
+
+```bash
+# Bước 5: Trên máy local (CMD Windows), tunnel THẲNG VÀO IP CONTAINER
+ssh -L 5004:172.17.0.13:5000 quangnam@10.70.39.39
+# Để yên cửa sổ này, không đóng
+```
+
+```
+# Bước 6: Mở trình duyệt
+http://127.0.0.1:5004
+```
+
+### ⚠️ Lỗi hay gặp nhất: đừng dùng VS Code auto port-forward
+
+**KHÔNG** dùng tab "Ports" của VS Code để auto-forward `127.0.0.1:5000` — nó sẽ **không hoạt động** vì Flask chạy bên trong container, không map port trực tiếp ra host. Bắt buộc phải SSH tunnel thẳng vào IP nội bộ của container như bước 5.
+
+### 7.2. Tắt demo
+
+1. Đóng tab trình duyệt
+2. Đóng cửa sổ CMD đang tunnel (`Ctrl+C`)
+3. Tab đang chạy Flask: `Ctrl+C`
+4. `exit` khỏi container
+5. Đóng VS Code
+
+> Container `maptr_container` **để nguyên**, không cần `docker stop` giữa các lần demo — chỉ cần lặp lại bước 2-6 ở lần sau.
+
+---
+
+## 8. Giới hạn kỹ thuật cần biết
+
+MapTR bắt buộc cần **calibration** (intrinsic/extrinsic từng camera) để chuyển ảnh 2D → BEV.
+
+**Trạng thái hiện tại của demo**: app lấy calib cố định từ 1 sample có sẵn (`SAMPLE_IDX = 0` trong `nuscenes_infos_temporal_val.pkl`), chỉ thay phần ảnh input.
+
+**Đã test và xác nhận**: đưa 6 ảnh phố Boston rời rạc (khác thời điểm/vị trí, không đồng bộ) vào → kết quả ra gần giống hệt các lần test trước dù nội dung ảnh khác hoàn toàn.
+
+**Kết luận**: khi calib không khớp với ảnh thật, model không thực sự "đọc" nội dung ảnh mới — kết quả chủ yếu phản ánh cấu trúc hình học cố định từ calib.
+
+**Yêu cầu để inference đúng nghĩa trên ảnh thực tế**: cần calibration thật (intrinsic + extrinsic) của đúng bộ 6 camera chụp **đồng thời trên cùng 1 xe, cùng 1 thời điểm** — không phải 6 ảnh rời rạc dù đúng tên vị trí camera.
+
+---
+
+## 9. File quan trọng — không được xóa
+
+- `~/maptr/` toàn bộ (code MapTR + 8 fix ở mục 5)
+- `ckpts/maptr_tiny_r50_24e.pth` — checkpoint đã train
+- Docker image `maptr_server:v3`, `maptr_server:v4`
+- `~/maptr/app.py`, `~/maptr/maptr_6cam_inference.ipynb`
+
+---
+
+## 10. Troubleshooting thường gặp
+
+| Triệu chứng | Nguyên nhân | Cách fix |
+|---|---|---|
+| `Failed to initialize NVML` khi chạy `nvidia-smi` trong container | Container mất kết nối GPU sau khi restart máy/VS Code | `docker restart maptr_container` rồi exec lại |
+| `du -sh` báo dung lượng data cực lớn (400GB+) trên server 1 | `du` đi xuyên qua sshfs mount, cộng luôn dung lượng thật bên server 2 | Dùng `du -x` để xem dung lượng thật local |
+| Web demo không load được ở `127.0.0.1:5000` | Dùng nhầm VS Code auto port-forward thay vì SSH tunnel thủ công | Tunnel thẳng vào IP container theo mục 7.1 bước 5 |
+| Kết quả inference giống hệt nhau dù đổi ảnh input | Calibration cố định, không khớp ảnh thật (xem mục 8) | Cần bộ calib thật đồng bộ 6 camera, hỏi mentor xác nhận yêu cầu |
+| Lỗi `networkx.exception.NodeNotFound` khi convert data full trainval | Bug đã biết của MapTR repo, chưa có fix chính thức từ tác giả | Đã fix bằng try/except, xem mục 5 fix #8 |
+
+---
+
+## 11. Roadmap tiếp theo
+
+Theo yêu cầu mentor: **tạm dừng nghiên cứu model mới, tập trung hoàn thiện demo hiện tại trước.**
+
+Sau khi demo ổn, khảo sát các model SOTA hơn MapTR (đề xuất theo thứ tự dễ → khó deploy, dựa trên độ tương đồng kiến trúc):
+
+1. **MapQR** (ECCV 2024) — https://github.com/HXMap/MapQR — cải tiến query design, gần giống kiến trúc MapTR nhất
+2. **StreamMapNet** (WACV 2024) — https://github.com/yuantianyuan01/StreamMapNet — temporal streaming
+3. **SQD-MapNet** (ECCV 2024) — https://github.com/shuowang666/SQD-MapNet — build trên StreamMapNet, 74-75 mAP
+4. **MapTracker** (ECCV 2024 Oral) — https://github.com/woodfrog/maptracker — memory-based tracking, kiến trúc khác biệt nhất
+
+**Việc cần làm trước khi merge nhiều local map thành 1 global map**: xác nhận với mentor có cần bộ 6 ảnh calibration thật (đồng bộ, cùng xe, cùng thời điểm) hay demo hiện tại đã đủ đáp ứng yêu cầu.
