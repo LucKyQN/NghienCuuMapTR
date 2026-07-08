@@ -28,8 +28,8 @@ Setup gồm 2 server nội bộ, thông LAN, mount chéo qua `sshfs`:
 
 | | Server 1 (Compute) | Server 2 (Storage) |
 |---|---|---|
-| IP | `10.70.39.39` | `10.70.39.204` |
-| SSH user | `quangnam` | `vnpt` |
+| IP | `<IP_SERVER_1>` | `<IP_SERVER_2>` |
+| SSH user | `<USERNAME_1>` | `<USERNAME_2>` |
 | GPU | A100 | Không |
 | Vai trò | Chạy training/inference | Lưu trữ dataset (không cài Docker/env) |
 | Data thật | Không (chỉ mount qua sshfs) | `/data/maptr/nuscenes/` (~402GB, full trainval) |
@@ -108,8 +108,8 @@ Data được tải bằng `aria2c` về server 2, **không cần tải lại**.
 ### 4.2. Mount dataset vào server 1
 
 ```bash
-# Trên server 1 (10.70.39.39):
-sshfs vnpt@10.70.39.204:/data/maptr/nuscenes ~/data_server2/nuscenes
+# Trên server 1 :
+sshfs <USERNAME_2>@<IP_SERVER_2>:<PATH_DATASET_SERVER_2> ~/data_server2/nuscenes
 
 # Symlink để container thấy đúng path mong đợi:
 ln -s ~/data_server2/nuscenes ~/maptr/data/nuscenes
