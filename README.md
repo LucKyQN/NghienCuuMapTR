@@ -17,7 +17,6 @@ Repo triển khai MapTR (baseline) cho bài toán HD Map Estimation, train/test 
 8. [Giới hạn kỹ thuật cần biết](#8-giới-hạn-kỹ-thuật-cần-biết)
 9. [File quan trọng — không được xóa](#9-file-quan-trọng--không-được-xóa)
 10. [Troubleshooting thường gặp](#10-troubleshooting-thường-gặp)
-11. [Roadmap tiếp theo](#11-roadmap-tiếp-theo)
 
 ---
 
