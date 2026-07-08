@@ -100,7 +100,7 @@ Môi trường này khó dựng vì:
 
 ## 4. Chuẩn bị dataset
 
-Dataset: **full nuScenes trainval** (~402GB), lưu ở server 2 (`10.70.39.204:/data/maptr/nuscenes/`).
+Dataset: **full nuScenes trainval** (~402GB), lưu ở server 2.
 
 ### 4.1. Tải dataset (đã làm, chỉ cần biết vị trí)
 Data được tải bằng `aria2c` về server 2, **không cần tải lại**.
