@@ -1,8 +1,7 @@
-# MapTR Deployment — HD Map Construction
+# MapTR Deployment
 
 Repo triển khai MapTR (baseline) cho bài toán HD Map Estimation, train/test trên full nuScenes trainval dataset. Đạt **mAP = 0.4998**, khớp với số liệu chính thức trong paper/repo gốc (mAP 50.0).
 
-> README này viết theo dạng "cầm tay chỉ việc" — người mới join chỉ cần đọc từ trên xuống là chạy được, không cần hỏi lại người cũ.
 
 ---
 
