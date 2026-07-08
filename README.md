@@ -176,7 +176,7 @@ Kết quả mong đợi: mAP ~0.4998 (xem mục 2).
 ### 7.1. Bật demo — làm đúng thứ tự
 
 ```bash
-# Bước 1: SSH/VS Code vào server 1 (10.70.39.39)
+# Bước 1: SSH/VS Code vào server 1 
 
 # Bước 2: Check GPU trong container TRƯỚC KHI chạy app (hay lỗi sau khi restart máy)
 sudo docker exec -it maptr_container bash
@@ -205,7 +205,7 @@ sudo docker inspect maptr_container | grep IPAddress
 
 ```bash
 # Bước 5: Trên máy local (CMD Windows), tunnel THẲNG VÀO IP CONTAINER
-ssh -L 5004:172.17.0.13:5000 quangnam@10.70.39.39
+ssh -L 5004:<IP_CONTAINER>:5000 <USERNAME_1>@<IP_SERVER_1>
 # Để yên cửa sổ này, không đóng
 ```
 
@@ -276,4 +276,3 @@ Sau khi demo ổn, khảo sát các model SOTA hơn MapTR (đề xuất theo th�
 3. **SQD-MapNet** (ECCV 2024) — https://github.com/shuowang666/SQD-MapNet — build trên StreamMapNet, 74-75 mAP
 4. **MapTracker** (ECCV 2024 Oral) — https://github.com/woodfrog/maptracker — memory-based tracking, kiến trúc khác biệt nhất
 
-**Việc cần làm trước khi merge nhiều local map thành 1 global map**: xác nhận với mentor có cần bộ 6 ảnh calibration thật (đồng bộ, cùng xe, cùng thời điểm) hay demo hiện tại đã đủ đáp ứng yêu cầu.
